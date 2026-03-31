@@ -1,9 +1,9 @@
 import sqlite3
 from pathlib import Path
 from typing import List
+import os
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-DB_PATH = BASE_DIR / "stockbot.db"
+DB_PATH = os.getenv("DB_PATH", "stockbot.db")
 
 
 def get_connection() -> sqlite3.Connection:
