@@ -1,4 +1,7 @@
 from fastapi import APIRouter
+from app.services.history_service import get_history
+from fastapi.responses import StreamingResponse
+from app.services.chart_service import generate_chart
 from app.providers.tdcc_provider import (
     get_available_dates,
     get_stock_holding_by_date,
@@ -44,7 +47,6 @@ def tdcc_stock_by_date(date: str, stock_id: str):
     return data
 
 
-# 這兩條要放前面
 @router.get("/chip/latest/{stock_id}")
 def chip_latest(stock_id: str):
     result = calculate_latest_chip_ratio(stock_id)
@@ -57,7 +59,22 @@ def chip_latest(stock_id: str):
 def chip_change(stock_id: str):
     return calculate_chip_change(stock_id)
 
+@router.get("/chip/history/{stock_id}")
+def chip_history(stock_id: str, months: int = 6):
+    data = get_history(stock_id, months)
+    return {
+        "stock_id": stock_id,
+        "range": f"{months}m",
+        "data": data
+    }
+@router.get("/chip/chart/{stock_id}")
+def chip_chart(stock_id: str, months: int = 6):
+    buf = generate_chart(stock_id, months)
 
+    if not buf:
+        return {"message": "no data"}
+
+    return StreamingResponse(buf, media_type="image/png")
 # 這條放最後
 @router.get("/chip/{date}/{stock_id}")
 def chip_ratio(date: str, stock_id: str):
@@ -65,3 +82,4 @@ def chip_ratio(date: str, stock_id: str):
     if not result:
         return {"stock_id": stock_id, "date": date, "message": "查無資料"}
     return result
+
